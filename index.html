@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multiplication Dojo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #F4EFE3;
+    --ink-dim: #B9B4A8;
+    --dojo-bg: #1B1F3B;
+    --dojo-bg-2: #141731;
+    --mat: #E8D9B5;
+    --mat-shadow: #C9B688;
+    --gold: #E8B94A;
+    --gold-deep: #C9942A;
+    --danger: #D9634C;
+    --ok: #5FAE6E;
+
+    --belt-white: #F5F3EC;
+    --belt-white-ink: #3A3730;
+    --belt-yellow: #F2C230;
+    --belt-orange: #E8792B;
+    --belt-green: #3F9A54;
+    --belt-blue: #2F6FB0;
+    --belt-purple: #7B4FA0;
+    --belt-brown: #6B4226;
+    --belt-black: #17171A;
+  }
+
+  * { box-sizing: border-box; }
+
+  #dojo-root {
+    font-family: 'Nunito', sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(232,185,74,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(127,79,160,0.12), transparent 55%),
+      linear-gradient(180deg, var(--dojo-bg) 0%, var(--dojo-bg-2) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 28px 18px 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  #dojo-root::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 64px);
+    pointer-events: none;
+  }
+
+  .dojo-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+  h1.dojo-title {
+    font-family: 'Bungee', sans-serif;
+    font-weight: 400;
+    font-size: clamp(30px, 6vw, 44px);
+    line-height: 1.05;
+    margin: 8px 0 6px;
+    color: var(--ink);
+    text-shadow: 0 3px 0 rgba(0,0,0,0.35);
+  }
+
+  .subhead {
+    color: var(--ink-dim);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 22px;
+  }
+
+  /* Belt rack */
+  .rack {
+    background: linear-gradient(180deg, #2A2F55 0%, #232853 100%);
+    border-radius: 18px;
+    padding: 18px 16px 22px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+    margin-bottom: 20px;
+  }
+
+  .rack-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #3a4070, #4a4f85);
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .rack-bar::before, .rack-bar::after {
+    content: ""; position: absolute; top: -6px; width: 4px; height: 20px;
+    background: #55598c; border-radius: 2px;
+  }
+  .rack-bar::before { left: 6%; } .rack-bar::after { right: 6%; }
+
+  .belt-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 480px) {
+    .belt-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .belt-card {
+    background: rgba(0,0,0,0.18);
+    border-radius: 12px;
+    padding: 10px 8px 12px;
+    text-align: center;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+  }
+  .belt-card:hover { transform: translateY(-2px); background: rgba(0,0,0,0.28); }
+  .belt-card.selected { border-color: var(--gold); background: rgba(232,185,74,0.10); }
+
+  .belt-strip {
+    height: 26px;
+    border-radius: 6px;
+    margin: 0 auto 8px;
+    width: 100%;
+    position: relative;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.15);
+  }
+  .belt-strip::after {
+    content: "";
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 18px; height: 18px; border-radius: 4px;
+    background: rgba(0,0,0,0.22);
+  }
+  .belt-strip.mastered::after {
+    background: var(--gold);
+    box-shadow: 0 0 8px rgba(232,185,74,0.8);
+  }
+
+  .belt-table { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; color: var(--ink); }
+  .belt-name { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); font-weight: 700; margin-top: 2px; }
+  .belt-status { font-size: 10px; margin-top: 4px; font-weight: 800; color: var(--gold); min-height: 12px; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.15s ease;
+    color: var(--dojo-bg-2);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%); box-shadow: 0 6px 0 #8a6a1c, 0 10px 18px -6px rgba(0,0,0,0.5); }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-primary:active { box-shadow: 0 2px 0 #8a6a1c; }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: var(--ink); border: 1.5px solid rgba(255,255,255,0.14); box-shadow: none; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+  .btn-block { width: 100%; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-row .btn { flex: 1; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Mode picker */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+  @media (max-width: 480px) { .mode-grid { grid-template-columns: 1fr; } }
+  .mode-card {
+    background: rgba(0,0,0,0.18);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .mode-card:hover { transform: translateY(-2px); }
+  .mode-card.selected { border-color: var(--gold); background: rgba(232,185,74,0.08); }
+  .mode-card .mode-icon { font-size: 24px; }
+  .mode-card h3 { font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 16px; margin: 8px 0 4px; }
+  .mode-card p { font-size: 12.5px; color: var(--ink-dim); font-weight: 600; line-height: 1.4; margin: 0; }
+
+  .panel {
+    background: rgba(0,0,0,0.16);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  /* Play screen */
+  .play-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .stat-chip { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; background: rgba(0,0,0,0.25); padding: 6px 12px; border-radius: 999px; }
+  .streak-chip { color: var(--gold); }
+
+  .problem-stage {
+    background: var(--mat);
+    color: #2B2620;
+    border-radius: 16px;
+    padding: 40px 20px;
+    text-align: center;
+    box-shadow: inset 0 -6px 0 var(--mat-shadow), 0 16px 30px -14px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .problem-stage::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0 2px, transparent 2px 40px);
+    pointer-events: none;
+  }
+  .problem-text {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(38px, 10vw, 56px);
+    letter-spacing: 0.02em;
+  }
+  .answer-input {
+    margin-top: 20px;
+    width: 140px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 30px;
+    font-weight: 700;
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 3px solid #2B2620;
+    background: #FFFDF7;
+    color: #2B2620;
+  }
+  .answer-input:focus { outline: 3px solid var(--gold-deep); outline-offset: 2px; }
+
+  .feedback-flash {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Bungee', sans-serif; font-size: 26px; opacity: 0; pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .feedback-flash.show { opacity: 1; }
+  .feedback-flash.good { color: var(--ok); background: rgba(95,174,110,0.14); }
+  .feedback-flash.bad { color: var(--danger); background: rgba(217,99,76,0.14); }
+
+  .progress-track { height: 10px; background: rgba(255,255,255,0.08); border-radius: 6px; margin: 16px 0 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold-deep), var(--gold)); transition: width 0.25s ease; }
+  .progress-label { font-size: 12px; color: var(--ink-dim); font-weight: 700; }
+
+  /* Results */
+  .result-hero { text-align: center; padding: 10px 0 6px; }
+  .result-belt {
+    width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bungee', sans-serif; font-size: 30px;
+    box-shadow: 0 10px 26px -10px rgba(0,0,0,0.6);
+  }
+  .result-title { font-family: 'Bungee', sans-serif; font-size: 24px; margin: 4px 0; }
+  .result-sub { color: var(--ink-dim); font-weight: 700; font-size: 14px; margin-bottom: 18px; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+  .stat-box { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 14px 8px; text-align: center; }
+  .stat-box .num { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: var(--gold); }
+  .stat-box .lbl { font-size: 10.5px; color: var(--ink-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* Chart / history */
+  .chart-wrap { padding: 4px 0 0; }
+  .chart-legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-dim); font-weight: 700; margin-top: 6px; }
+
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--ink-dim); font-weight: 700; font-size: 14px; }
+
+  .nav-back {
+    background: none; border: none; color: var(--ink-dim); font-family: 'Nunito'; font-weight: 800;
+    font-size: 13px; cursor: pointer; padding: 6px 0; margin-bottom: 10px; display: flex; align-items: center; gap: 4px;
+  }
+  .nav-back:hover { color: var(--ink); }
+
+  .section-title { font-family: 'Bungee', sans-serif; font-size: 15px; margin: 22px 0 10px; color: var(--ink); }
+
+  .keypad {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;
+    max-width: 260px; margin-left: auto; margin-right: auto;
+  }
+  .keypad button {
+    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--ink);
+    font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; border-radius: 10px; padding: 12px 0;
+    cursor: pointer;
+  }
+  .keypad button:active { transform: scale(0.95); }
+  .submit-btn {
+    margin-top: 16px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>
+</head>
+<body>
+
+<div id="dojo-root">
+  <div class="dojo-wrap" id="dojo-app"></div>
+</div>
+
+<script>
+(function () {
+  const TABLES = [3, 4, 6, 7, 8, 9, 11, 12];
+  const BELTS = [
+    { key: 'white',  name: 'White',  bg: 'var(--belt-white)',  text: '#3A3730' },
+    { key: 'yellow', name: 'Yellow', bg: 'var(--belt-yellow)', text: '#3A2E00' },
+    { key: 'orange', name: 'Orange', bg: 'var(--belt-orange)', text: '#3A1D00' },
+    { key: 'green',  name: 'Green',  bg: 'var(--belt-green)',  text: '#FFFFFF' },
+    { key: 'blue',   name: 'Blue',   bg: 'var(--belt-blue)',   text: '#FFFFFF' },
+    { key: 'purple', name: 'Purple', bg: 'var(--belt-purple)', text: '#FFFFFF' },
+    { key: 'brown',  name: 'Brown',  bg: 'var(--belt-brown)',  text: '#FFFFFF' },
+    { key: 'black',  name: 'Black',  bg: 'var(--belt-black)',  text: '#E8B94A' },
+  ];
+  const BELT_BY_TABLE = {};
+  TABLES.forEach((t, i) => BELT_BY_TABLE[t] = BELTS[i]);
+
+  const PROBLEMS_PER_ROUND = 10;
+  const MASTER_ACCURACY = 90;
+  const MASTER_AVG_SEC = 5;
+  const SESSION_KEY = 'dojo-session'; // just remembers "who am I" on this device - actual data lives on the server
+
+  const root = document.getElementById('dojo-app');
+  let state = { screen: 'login', table: null, mode: null };
+  let session = null; // { studentId, name }
+  let progress = {}; // loaded from the server for the logged-in student
+
+  const encouragements = [
+    "Nice hit!", "Sharp!", "You're on fire!", "Sensei approves!", "Clean strike!", "Keep flowing!"
+  ];
+  const missEncouragements = [
+    "Shake it off.", "Reset your stance.", "Close! Try the next one.", "No worries, breathe."
+  ];
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function restoreSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) session = JSON.parse(raw);
+    } catch (e) { session = null; }
+  }
+
+  function persistSession() {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) { /* ignore */ }
+  }
+
+  function clearSession() {
+    session = null;
+    progress = {};
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ }
+  }
+
+  async function login(classCode, name) {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ classCode, name }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not log in.');
+    session = { studentId: data.studentId, name: data.name };
+    persistSession();
+    await loadProgress();
+  }
+
+  async function loadProgress() {
+    if (!session) { progress = {}; return; }
+    try {
+      const res = await fetch('/api/progress/' + encodeURIComponent(session.studentId));
+      if (res.status === 404) { clearSession(); progress = {}; return; }
+      const data = await res.json();
+      progress = data.progress || {};
+    } catch (e) {
+      progress = {};
+    }
+  }
+
+  async function saveSession(table, sessionResult) {
+    if (!session) return;
+    try {
+      const res = await fetch('/api/progress/' + encodeURIComponent(session.studentId), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, session: sessionResult }),
+      });
+      const data = await res.json();
+      if (res.ok) progress = data.progress;
+    } catch (e) { /* if the network hiccups, the round result still shows on-screen */ }
+  }
+
+  function tableStats(table) {
+    const sessions = (progress[table] && progress[table].sessions) || [];
+    if (sessions.length === 0) return null;
+    const last = sessions[sessions.length - 1];
+    const best = sessions.reduce((a, b) => (b.accuracy > a.accuracy ? b : a), sessions[0]);
+    const mastered = sessions.some(s => s.accuracy >= MASTER_ACCURACY && s.avgTime <= MASTER_AVG_SEC);
+    return { sessions, last, best, mastered };
+  }
+
+  function render() {
+    if (state.screen === 'login') return renderLogin();
+    if (state.screen === 'home') return renderHome();
+    if (state.screen === 'setup') return renderSetup();
+    if (state.screen === 'play') return renderPlay();
+    if (state.screen === 'results') return renderResults();
+    if (state.screen === 'history') return renderHistory();
+  }
+
+  function renderLogin() {
+    root.innerHTML = `
+      <div class="eyebrow"><span class="dot"></span>MULTIPLICATION DOJO</div>
+      <h1 class="dojo-title">CPA 4th Grade Multiplication DOJO</h1>
+      <div class="subhead">Enter your class code and name to start training.</div>
+      <div class="panel">
+        <label style="display:block; font-weight:800; font-size:13px; margin-bottom:6px;">Class code</label>
+        <input class="answer-input" id="login-code" type="text" autocomplete="off"
+          style="width:100%; font-size:18px; text-align:left; padding:12px 14px; margin-bottom:16px;" placeholder="e.g. DOJO101" />
+        <label style="display:block; font-weight:800; font-size:13px; margin-bottom:6px;">Your name</label>
+        <input class="answer-input" id="login-name" type="text" autocomplete="off"
+          style="width:100%; font-size:18px; text-align:left; padding:12px 14px;" placeholder="First name and last initial" />
+        <div id="login-error" style="color:var(--danger); font-weight:700; font-size:13px; margin-top:10px; min-height:16px;"></div>
+        <button class="btn btn-primary btn-block" id="login-btn" style="margin-top:14px;">Enter the dojo</button>
+      </div>
+    `;
+
+    const codeInput = document.getElementById('login-code');
+    const nameInput = document.getElementById('login-name');
+    const errorBox = document.getElementById('login-error');
+    const loginBtn = document.getElementById('login-btn');
+
+    async function doLogin() {
+      errorBox.textContent = '';
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Checking...';
+      try {
+        await login(codeInput.value, nameInput.value);
+        state.screen = 'home';
+        render();
+      } catch (e) {
+        errorBox.textContent = e.message;
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Enter the dojo';
+      }
+    }
+
+    loginBtn.addEventListener('click', doLogin);
+    [codeInput, nameInput].forEach(inp => {
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+    });
+    codeInput.focus();
+  }
+
+  function renderHome() {
+    const masteredCount = TABLES.filter(t => {
+      const s = tableStats(t);
+      return s && s.mastered;
+    }).length;
+
+    root.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <div class="eyebrow"><span class="dot"></span>MULTIPLICATION DOJO</div>
+        <button class="nav-back" id="logout-btn" style="margin-bottom:0;">${session.name} &middot; Log out</button>
+      </div>
+      <h1 class="dojo-title">CPA 4th Grade Multiplication DOJO</h1>
+      <div class="subhead">${masteredCount} of ${TABLES.length} belts mastered &mdash; pick a times table to train.</div>
+
+      <div class="rack">
+        <div class="rack-bar"></div>
+        <div class="belt-grid" id="belt-grid"></div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="history-btn" style="margin-bottom:8px;">&#128200; View my progress</button>
+    `;
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      clearSession();
+      state.screen = 'login';
+      render();
+    });
+
+    const grid = document.getElementById('belt-grid');
+    TABLES.forEach(table => {
+      const belt = BELT_BY_TABLE[table];
+      const stats = tableStats(table);
+      const card = document.createElement('div');
+      card.className = 'belt-card';
+      card.innerHTML = `
+        <div class="belt-strip ${stats && stats.mastered ? 'mastered' : ''}" style="background:${belt.bg};"></div>
+        <div class="belt-table">&times;${table}</div>
+        <div class="belt-name">${belt.name} belt</div>
+        <div class="belt-status">${stats ? (stats.mastered ? '&#9733; Mastered' : Math.round(stats.last.accuracy) + '% last time') : 'Not started'}</div>
+      `;
+      card.addEventListener('click', () => {
+        state.table = table;
+        state.screen = 'setup';
+        state.mode = null;
+        render();
+      });
+      grid.appendChild(card);
+    });
+
+    document.getElementById('history-btn').addEventListener('click', () => {
+      state.screen = 'history';
+      render();
+    });
+  }
+
+  function renderSetup() {
+    const belt = BELT_BY_TABLE[state.table];
+    root.innerHTML = `
+      <button class="nav-back" id="back-btn">&larr; Back to belts</button>
+      <div class="eyebrow"><span class="dot"></span>${belt.name.toUpperCase()} BELT &middot; &times;${state.table} TABLE</div>
+      <h1 class="dojo-title">Choose Your Training</h1>
+      <div class="subhead">Every round is ${PROBLEMS_PER_ROUND} problems from the &times;${state.table} table.</div>
+
+      <div class="mode-grid">
+        <div class="mode-card" data-mode="drill">
+          <div class="mode-icon">&#9203;</div>
+          <h3>Drill Mode</h3>
+          <p>Race the clock. Straightforward practice &mdash; see your accuracy and speed at the end.</p>
+        </div>
+        <div class="mode-card" data-mode="game">
+          <div class="mode-icon">&#129357;</div>
+          <h3>Sparring Mode</h3>
+          <p>Build a streak for bonus points. Miss one and the streak resets &mdash; stay sharp!</p>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="start-btn" disabled>Select a mode to begin</button>
+    `;
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      state.screen = 'home';
+      render();
+    });
+
+    const cards = root.querySelectorAll('.mode-card');
+    const startBtn = document.getElementById('start-btn');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        state.mode = card.dataset.mode;
+        startBtn.disabled = false;
+        startBtn.textContent = state.mode === 'drill' ? 'Start Drill ->' : 'Start Sparring ->';
+      });
+    });
+
+    startBtn.addEventListener('click', () => {
+      if (!state.mode) return;
+      beginRound();
+    });
+  }
+
+  let round = null; // { problems, index, correct, streak, bestStreak, startTime, times: [], answers: [] }
+
+  function makeProblems(table) {
+    const factors = [];
+    for (let i = 1; i <= 12; i++) factors.push(i);
+    // shuffle
+    for (let i = factors.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [factors[i], factors[j]] = [factors[j], factors[i]];
+    }
+    return factors.slice(0, PROBLEMS_PER_ROUND).map(f => ({ a: table, b: f, answer: table * f }));
+  }
+
+  function beginRound() {
+    round = {
+      problems: makeProblems(state.table),
+      index: 0,
+      correct: 0,
+      streak: 0,
+      bestStreak: 0,
+      points: 0,
+      times: [],
+      qStart: Date.now(),
+      roundStart: Date.now(),
+    };
+    state.screen = 'play';
+    render();
+  }
+
+  function renderPlay() {
+    const belt = BELT_BY_TABLE[state.table];
+    const p = round.problems[round.index];
+    const pct = Math.round((round.index / round.problems.length) * 100);
+
+    root.innerHTML = `
+      <div class="eyebrow"><span class="dot"></span>${belt.name.toUpperCase()} BELT &middot; ${state.mode === 'drill' ? 'DRILL' : 'SPARRING'}</div>
+      <div class="play-top" style="margin-top:8px;">
+        <div class="stat-chip">Problem ${round.index + 1} / ${round.problems.length}</div>
+        ${state.mode === 'game' ? `<div class="stat-chip streak-chip">&#128293; Streak ${round.streak} &middot; ${round.points} pts</div>` : `<div class="stat-chip">&#10004; ${round.correct} correct</div>`}
+      </div>
+
+      <div class="problem-stage">
+        <div class="feedback-flash" id="flash"></div>
+        <div class="problem-text">${p.a} &times; ${p.b} = ?</div>
+        <input class="answer-input" id="answer-input" type="tel" inputmode="numeric" autocomplete="off" autofocus />
+        <button class="btn btn-primary submit-btn" id="submit-btn">Check answer</button>
+        <div class="keypad" id="keypad"></div>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="progress-label">${pct}% through this round</div>
+    `;
+
+    const input = document.getElementById('answer-input');
+    input.focus();
+    round.qStart = Date.now();
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAnswer(input.value);
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', () => {
+      submitAnswer(input.value);
+    });
+
+    // on-screen keypad (always available, since not every device has a physical keyboard)
+    const keypad = document.getElementById('keypad');
+    const KEYS = ['1','2','3','4','5','6','7','8','9','back','0','go'];
+    const LABELS = { back: '&#9003;', go: '&#9166;' };
+    KEYS.forEach(k => {
+      const b = document.createElement('button');
+      b.innerHTML = LABELS[k] || k;
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        if (k === 'back') input.value = input.value.slice(0, -1);
+        else if (k === 'go') submitAnswer(input.value);
+        else input.value += k;
+        input.focus();
+      });
+      keypad.appendChild(b);
+    });
+  }
+
+  function submitAnswer(raw) {
+    if (raw === undefined || raw === null || String(raw).trim() === '') return;
+    const val = parseInt(raw, 10);
+    const p = round.problems[round.index];
+    const elapsed = (Date.now() - round.qStart) / 1000;
+    const correct = val === p.answer;
+
+    round.times.push(elapsed);
+    const flash = document.getElementById('flash');
+
+    if (correct) {
+      round.correct++;
+      round.streak++;
+      round.bestStreak = Math.max(round.bestStreak, round.streak);
+      const bonus = state.mode === 'game' ? Math.min(round.streak, 5) : 1;
+      round.points += 10 * bonus;
+      flash.textContent = state.mode === 'game' ? `${pick(encouragements)} +${10 * bonus}` : pick(encouragements);
+      flash.className = 'feedback-flash show good';
+    } else {
+      round.streak = 0;
+      flash.textContent = `${pick(missEncouragements)} (${p.answer})`;
+      flash.className = 'feedback-flash show bad';
+    }
+
+    setTimeout(() => {
+      round.index++;
+      if (round.index >= round.problems.length) {
+        finishRound();
+      } else {
+        renderPlay();
+      }
+    }, 550);
+  }
+
+  async function finishRound() {
+    const accuracy = Math.round((round.correct / round.problems.length) * 100);
+    const avgTime = round.times.reduce((a, b) => a + b, 0) / round.times.length;
+
+    const sessionResult = {
+      date: new Date().toISOString(),
+      mode: state.mode,
+      accuracy,
+      avgTime: Math.round(avgTime * 10) / 10,
+      score: round.points,
+      bestStreak: round.bestStreak,
+    };
+
+    // optimistic local update so results screen and belt rack feel instant
+    if (!progress[state.table]) progress[state.table] = { sessions: [] };
+    progress[state.table].sessions.push(sessionResult);
+    await saveSession(state.table, sessionResult);
+
+    state.lastSession = sessionResult;
+    state.justMastered = accuracy >= MASTER_ACCURACY && avgTime <= MASTER_AVG_SEC;
+    state.screen = 'results';
+    render();
+  }
+
+  function renderResults() {
+    const belt = BELT_BY_TABLE[state.table];
+    const s = state.lastSession;
+    const title = state.justMastered ? `${belt.name} Belt Earned!` : 'Round Complete';
+    const sub = state.justMastered
+      ? `You hit ${s.accuracy}% accuracy at ${s.avgTime}s per problem &mdash; that's belt-level mastery!`
+      : `Mastery needs ${MASTER_ACCURACY}%+ accuracy and under ${MASTER_AVG_SEC}s per problem. Keep training!`;
+
+    root.innerHTML = `
+      <div class="panel">
+        <div class="result-hero">
+          <div class="result-belt" style="background:${belt.bg}; color:${belt.text};">${state.justMastered ? '&#9733;' : '&times;' + state.table}</div>
+          <div class="result-title">${title}</div>
+          <div class="result-sub">${sub}</div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-box"><div class="num">${s.accuracy}%</div><div class="lbl">Accuracy</div></div>
+          <div class="stat-box"><div class="num">${s.avgTime}s</div><div class="lbl">Avg speed</div></div>
+          <div class="stat-box"><div class="num">${state.mode === 'game' ? s.score : s.bestStreak}</div><div class="lbl">${state.mode === 'game' ? 'Points' : 'Best streak'}</div></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="home-btn">Belt rack</button>
+          <button class="btn btn-primary" id="again-btn">Train again</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('home-btn').addEventListener('click', () => {
+      state.screen = 'home';
+      render();
+    });
+    document.getElementById('again-btn').addEventListener('click', () => {
+      beginRound();
+    });
+  }
+
+  function renderHistory() {
+    root.innerHTML = `
+      <button class="nav-back" id="back-btn">&larr; Back to belts</button>
+      <div class="eyebrow"><span class="dot"></span>TRAINING LOG</div>
+      <h1 class="dojo-title">Your Progress</h1>
+      <div class="subhead">Accuracy over your last training sessions, by belt.</div>
+      <div id="history-list"></div>
+    `;
+    document.getElementById('back-btn').addEventListener('click', () => {
+      state.screen = 'home';
+      render();
+    });
+
+    const list = document.getElementById('history-list');
+    let any = false;
+
+    TABLES.forEach(table => {
+      const stats = tableStats(table);
+      if (!stats) return;
+      any = true;
+      const belt = BELT_BY_TABLE[table];
+      const sessions = stats.sessions.slice(-10);
+
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.style.marginBottom = '14px';
+
+      const w = 280, h = 60, pad = 6;
+      const points = sessions.map((s, i) => {
+        const x = sessions.length === 1 ? w / 2 : pad + (i / (sessions.length - 1)) * (w - pad * 2);
+        const y = h - pad - (s.accuracy / 100) * (h - pad * 2);
+        return [x, y];
+      });
+      const pathD = points.map((pt, i) => (i === 0 ? 'M' : 'L') + pt[0].toFixed(1) + ',' + pt[1].toFixed(1)).join(' ');
+      const dots = points.map((pt, i) => `<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="3" fill="${sessions[i].accuracy >= MASTER_ACCURACY ? '#E8B94A' : '#8b91c9'}" />`).join('');
+
+      panel.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="width:22px;height:14px;border-radius:4px;background:${belt.bg};"></div>
+          <strong style="font-family:'Bungee',sans-serif; font-size:14px; font-weight:400;">&times;${table} &mdash; ${belt.name} belt</strong>
+          <span style="margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-dim);">${sessions.length} session${sessions.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+            <line x1="0" y1="${h - pad - (MASTER_ACCURACY / 100) * (h - pad * 2)}" x2="${w}" y2="${h - pad - (MASTER_ACCURACY / 100) * (h - pad * 2)}" stroke="#E8B94A" stroke-width="1" stroke-dasharray="3,3" opacity="0.5" />
+            <path d="${pathD}" fill="none" stroke="#8b91c9" stroke-width="2" />
+            ${dots}
+          </svg>
+          <div class="chart-legend"><span>Oldest</span><span>Newest &mdash; last: ${sessions[sessions.length - 1].accuracy}%</span></div>
+        </div>
+      `;
+      list.appendChild(panel);
+    });
+
+    if (!any) {
+      list.innerHTML = `<div class="panel empty-state">No training sessions yet.<br>Pick a belt and complete a round to see your progress here!</div>`;
+    }
+  }
+
+  restoreSession();
+  if (session) {
+    loadProgress().then(() => { state.screen = 'home'; render(); });
+  } else {
+    render();
+  }
+})();
+</script>
+
+</body>
+</html>
